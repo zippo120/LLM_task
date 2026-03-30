@@ -91,24 +91,22 @@ $$\frac{\partial z_2}{\partial (A_1)_{i}} = w_{2i}$$
 
 #### Для батча из $n = 500$ элементов 
 
-$$
-\begin{aligned}
-\frac {\partial L}{\partial z_2} &= \hat{y} - y \in\mathbb{R}^{1 \times n}\\[4pt] 
-\frac{\partial L}{\partial W_2} &= \frac{1}{n} \cdot \frac {\partial L}{\partial z_2} \cdot A_1^T \in\mathbb{R}^{1 \times 8}\\[4pt]
-\frac{\partial L}{\partial b_2} &= \frac{1}{n} \cdot \frac {\partial L}{\partial z_2} \cdot \mathbf{1}_{n \times 1} \in\mathbb{R}^{1 \times 1}\\[4pt]
-\frac{\partial L}{\partial A_1} &= W_2^T \cdot \frac {\partial L}{\partial z_2}\in\mathbb{R}^{8 \times n}\\[4pt]
-\frac{\partial L}{\partial z_1} &= \frac{\partial L}{\partial A_1} \odot \mathbb{1}_{(z_1 > 0)} \in\mathbb{R}^{8 \times n}\\[4pt]
-\frac{\partial L}{\partial W_1} &= \frac{1}{n} \cdot \frac{\partial L}{\partial z_1} \cdot X \in\mathbb{R}^{8 \times 2}\\[4pt]
+$$\begin{aligned}
+\frac {\partial L}{\partial z_2} &= \hat{y} - y \in\mathbb{R}^{1 \times n},  
+\frac{\partial L}{\partial W_2} &= \frac{1}{n} \cdot \frac {\partial L}{\partial z_2} \cdot A_1^T \in\mathbb{R}^{1 \times 8},  
+\frac{\partial L}{\partial b_2} &= \frac{1}{n} \cdot \frac {\partial L}{\partial z_2} \cdot \mathbf{1}_{n \times 1} \in\mathbb{R}^{1 \times 1},
+\frac{\partial L}{\partial A_1} &= W_2^T \cdot \frac {\partial L}{\partial z_2}\in\mathbb{R}^{8 \times n},
+\frac{\partial L}{\partial z_1} &= \frac{\partial L}{\partial A_1} \odot \mathbb{1}_{(z_1 > 0)} \in\mathbb{R}^{8 \times n},
+\frac{\partial L}{\partial W_1} &= \frac{1}{n} \cdot \frac{\partial L}{\partial z_1} \cdot X \in\mathbb{R}^{8 \times 2},
 \frac{\partial L}{\partial b_1} &= \frac{1}{n} \cdot \frac{\partial L}{\partial z_1} \cdot \mathbf{1}_{n \times 1} \in\mathbb{R}^{8 \times 1}
-\end{aligned}
-$$
+\end{aligned}$$
 
 ## Численный метод (Метод конечных разностей)
 
 $$\frac{\partial L}{\partial c_i} \approx \frac{L(c_i + \varepsilon) - L(c_i - \varepsilon)}{2\varepsilon}, $$ шаг $\quad \varepsilon = 10^{-5}$  
 $c = W_1 |b_1|W_2 |b_2$  
-Для проверки будем использовать относительную разность, так как градиенты могут иметь разный масштаб, а она их нормирует.
-$$\text {rel_diff} = \max_i \frac{|grad_{\text{num}}^{(i)} - grad_{\text{an}}^{(i)}|}{|grad_{\text{num}}^{(i)}| + |grad_{\text{an}}^{(i)}| }$$
+Для проверки будем использовать относительную разность, так как градиенты могут иметь разный масштаб, а она их нормирует:
+$$\text{reldiff} = \max_i \frac{|grad_{\text{num}}^{(i)} - grad_{\text{an}}^{(i)}|}{|grad_{\text{num}}^{(i)}| + |grad_{\text{an}}^{(i)}| }$$
 
 ### Результаты градиентной проверки
 На случайных 50 входных данных погрешность не больше $10 ^{-4}$
@@ -122,27 +120,45 @@ $$\text {rel_diff} = \max_i \frac{|grad_{\text{num}}^{(i)} - grad_{\text{an}}^{(
 
 ## Устойчивость модели
 
-Для каждой правильно классифицированной точки $X$ с истинной меткой $y$ необходимо найти минимальное возмущение $\delta$, такое что:
+Для каждой правильно классифицированной точки $X$ с истинной меткой $y$ необходимо найти минимальное возмущение $\delta$, такое что: 
+
 $$\hat{y}(X+\delta) \neq y$$
+
 Для точки $X$ с истинной меткой $y$ определим функцию потерь
+
  $$L(X,y)=-(ylog(\hat{y}(X)) + (1-y)log(1-\hat{y}(X)))$$
+ 
  Нужно максимизировать $L(x, y)$ чтобы модель ошиблась. Для этого можно применить итеративный градиентный метод PGD:
+ 
  $$\delta_{t+1}=\delta_t+\alpha \cdot \nabla_X L(X+\delta_t,y)$$
+ 
  где: $\alpha-$шаг градиентного подъема, $t-$ номер итерации.  
  Идем вверх по градиенту функции потерь, поэтому для максимальной ошибки $\alpha > 0$.  
  Процесс останавливается при выполнении условия:
+ 
  $$\hat{y}(X+\delta_t) \neq y$$
+ 
 Полученное $\delta = \delta_t$ является искомым возмущением.  
 Градиент по X:
+
 $$\frac{\partial L}{\partial X} = \frac{\partial L}{\partial z_2} \cdot \frac{\partial z_2}{\partial A_1} \cdot \frac{\partial A_1}{\partial z_1} \cdot \frac{\partial z_1}{\partial X}$$
+
 $\frac{\partial z_1}{\partial X} =W_1^T$
+
 $$\nabla_X L(X, y) = W_1^T \left( \left( W_2^T (\hat{y} - y) \right) \odot \mathbb{1}_{(z_1 > 0)} \right)$$
+
 Для бинарной классификации с сигмоидой решение модели определяется знаком $z_2(X):$ 
+
 $$\hat{y}(X) = \sigma (z_2(X)) > 0.5\Leftrightarrow z_2>0$$
+
 Поэтому можно искать градиент $z_2$ по $X:$
+
 $$\nabla_X L = \frac{\partial L}{\partial z_2} \cdot \nabla_X z_2 = (\hat{y} - y) \cdot \nabla_X z_2$$
+
 $$\frac{\partial z_2}{\partial X} = \frac{\partial z_2}{\partial A_1} \cdot \frac{\partial A_1}{\partial z_1} \cdot \frac{\partial z_1}{\partial X}$$
+
 $$\frac{\partial z_2}{\partial X} = \left( W_2^T \odot \mathbb{1}_{(z_1 > 0)} \right)^T \cdot W_1^T$$
+
 В реализации попроще: если истинная метка равна 1, то двигаемся против градиента, иначе по нему.
 Для кусочно-линейной функции и старта из 0 — движение по градиенту ведет к ближайшей границе, поэтому полученное возмущение будет близко к минимальному по норме 2.
 ### Недостаток алгоритма 
