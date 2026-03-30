@@ -16,7 +16,9 @@
    $\hat{y} = A_2$ — выход. 
 
 Модель:
+
 $$\hat{y}(x) = \sigma(W_2 \cdot \text{ReLU}(W_1 x + b_1) + b_2)$$
+
 состоит из композиции линейных и кусочно-гладких функций, представляет собой кусочно-гладкую функцию.  
 
 В программе на вход подается массив из $X$ длиной $500$ из файла тестовой выборки ```data.csv```. Также в этом файле содержатся верные значения для предсказаний: $y \in\mathbb{R}^{500}$
@@ -24,36 +26,61 @@ $$\hat{y}(x) = \sigma(W_2 \cdot \text{ReLU}(W_1 x + b_1) + b_2)$$
 
  ## Функция потерь
  Для бинарной классификации подойдет loss-функция Binary Cross Entropy:
+ 
  $$L=-(ylog(\hat{y}) + (1-y)log(1-\hat{y}))$$
+ 
  Для массива из $n = 500$ объектов она примет вид:
+ 
  $$L = -\frac{1}{n}\sum_{i=1}^{n} (y_i \log(\hat{y}_i) + (1-y_i) \log(1-\hat{y}_i))$$
  
  ## Аналитический метод поиска градиента
  Производная по $\hat{y}$ (скаляр):
+ 
  $$\frac{\partial L}{\partial \hat{y}} = -\frac{y}{\hat{y}}+\frac{1-y}{1-\hat{y}}$$
+ 
  Производная сигмоиды:
+ 
  $$\frac{\partial \hat{y}}{\partial z_2}=\hat{y}(1-\hat{y})$$
+ 
  $$\frac{\partial L}{\partial z_2} =  \frac{\partial L}{\partial \hat{y}} \cdot \frac{\partial \hat{y}}{\partial z_2} = \hat{y}-y$$
+ 
  Производная $z_2$ по $W_2:$  
+ 
  $z_2 = W_2 A_1 + b_2$  
+ 
  $W_2 \in\mathbb{R}^{1 \times 8}, A_1 \in\mathbb{R}^{8 \times 1}$, $b_2 \in\mathbb{R}$  
+ 
  $z_2 = W_2 A_1+b_2=\sum_{i=1}^{8}w_{2i}a_{i}+b_2$  
- $\frac{\partial z_2}{\partial (W_2)_{i}} = a_{i}$  
+ 
+ $$\frac{\partial z_2}{\partial (W_2)_{i}} = a_{i}$$  
+ 
  $$\frac{\partial z_2}{\partial W_2} = A_1^T$$
+ 
  $z_2-$  скалярная функция:
+ 
  $$\frac{\partial L}{\partial W_2} = \frac{\partial L}{\partial z_2} \cdot \frac{\partial z_2}{\partial W_2} = (\hat{y}-y) \cdot A_1^T$$
+ 
  Производная по $b_2:$  
+ 
  $b_2 -$ скаляр, поэтому:
+ 
   $$\frac{\partial L}{\partial b_2} = \frac{\partial L}{\partial z_2} \cdot \frac{\partial z_2}{\partial b_2} = \frac{\partial L}{\partial z_2} \cdot 1 = (\hat{y}-y) $$
+  
  далее
+ 
 $$\frac{\partial L}{\partial A_1} = \frac{\partial L}{\partial z_2} \cdot \frac{\partial z_2}{\partial A_1}$$
- $\frac{\partial z_2}{\partial (A_1)_{i}} = w_{2i}$
+
+$$\frac{\partial z_2}{\partial (A_1)_{i}} = w_{2i}$$
+ 
  $$\frac{\partial z_2}{\partial A_1}=W_2^T$$
+ 
  
  $$\frac{\partial L}{\partial A_1} =(\hat{y}-y) \cdot W_2^T$$
  Производные по $W_1$ и $b_1:$  
  $a_i = ReLU((z_1)_i) = max(0, (z_1)_i)$
+ 
   $$\frac{\partial a_i}{\partial (z_1)_i} = \begin{cases} 0, & (z_1)_i \le 0 \\ 1, & (z_1)_i > 0 \end {cases}$$
+  
   
   $$\frac{\partial L}{\partial (b_1)_i} = \frac{\partial L}{\partial (z_1)_i} \cdot \frac{\partial (z_1)_i}{\partial (b_1)_i}= \frac{\partial L}{\partial (z_1)_i} \cdot 1=\frac{\partial L}{\partial (A_1)_i} \cdot \frac{\partial a_i}{\partial (z_1)_i} = w_{2i} \cdot \frac{\partial a_i}{\partial (z_1)_i}$$
   $z_1 = W_1 X + b_1$
