@@ -76,7 +76,9 @@ $$\frac{\partial z_2}{\partial (A_1)_{i}} = w_{2i}$$
  
  
  $$\frac{\partial L}{\partial A_1} =(\hat{y}-y) \cdot W_2^T$$
+ 
  Производные по $W_1$ и $b_1:$  
+ 
  $a_i = ReLU((z_1)_i) = max(0, (z_1)_i)$
  
   $$\frac{\partial a_i}{\partial (z_1)_i} = \begin{cases} 0, & (z_1)_i \le 0 \\ 1, & (z_1)_i > 0 \end {cases}$$
