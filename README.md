@@ -16,7 +16,9 @@
    $\hat{y} = A_2$ — выход. 
 
 Модель:
+
 $$\hat{y}(x) = \sigma(W_2 \cdot \text{ReLU}(W_1 x + b_1) + b_2)$$
+
 состоит из композиции линейных и кусочно-гладких функций, представляет собой кусочно-гладкую функцию.  
 
 В программе на вход подается массив из $X$ длиной $500$ из файла тестовой выборки ```data.csv```. Также в этом файле содержатся верные значения для предсказаний: $y \in\mathbb{R}^{500}$
@@ -24,36 +26,61 @@ $$\hat{y}(x) = \sigma(W_2 \cdot \text{ReLU}(W_1 x + b_1) + b_2)$$
 
  ## Функция потерь
  Для бинарной классификации подойдет loss-функция Binary Cross Entropy:
+ 
  $$L=-(ylog(\hat{y}) + (1-y)log(1-\hat{y}))$$
+ 
  Для массива из $n = 500$ объектов она примет вид:
+ 
  $$L = -\frac{1}{n}\sum_{i=1}^{n} (y_i \log(\hat{y}_i) + (1-y_i) \log(1-\hat{y}_i))$$
  
  ## Аналитический метод поиска градиента
  Производная по $\hat{y}$ (скаляр):
+ 
  $$\frac{\partial L}{\partial \hat{y}} = -\frac{y}{\hat{y}}+\frac{1-y}{1-\hat{y}}$$
+ 
  Производная сигмоиды:
+ 
  $$\frac{\partial \hat{y}}{\partial z_2}=\hat{y}(1-\hat{y})$$
+ 
  $$\frac{\partial L}{\partial z_2} =  \frac{\partial L}{\partial \hat{y}} \cdot \frac{\partial \hat{y}}{\partial z_2} = \hat{y}-y$$
+ 
  Производная $z_2$ по $W_2:$  
+ 
  $z_2 = W_2 A_1 + b_2$  
+ 
  $W_2 \in\mathbb{R}^{1 \times 8}, A_1 \in\mathbb{R}^{8 \times 1}$, $b_2 \in\mathbb{R}$  
+ 
  $z_2 = W_2 A_1+b_2=\sum_{i=1}^{8}w_{2i}a_{i}+b_2$  
- $\frac{\partial z_2}{\partial (W_2)_{i}} = a_{i}$  
+ 
+ $$\frac{\partial z_2}{\partial (W_2)_{i}} = a_{i}$$  
+ 
  $$\frac{\partial z_2}{\partial W_2} = A_1^T$$
+ 
  $z_2-$  скалярная функция:
+ 
  $$\frac{\partial L}{\partial W_2} = \frac{\partial L}{\partial z_2} \cdot \frac{\partial z_2}{\partial W_2} = (\hat{y}-y) \cdot A_1^T$$
+ 
  Производная по $b_2:$  
+ 
  $b_2 -$ скаляр, поэтому:
+ 
   $$\frac{\partial L}{\partial b_2} = \frac{\partial L}{\partial z_2} \cdot \frac{\partial z_2}{\partial b_2} = \frac{\partial L}{\partial z_2} \cdot 1 = (\hat{y}-y) $$
+  
  далее
+ 
 $$\frac{\partial L}{\partial A_1} = \frac{\partial L}{\partial z_2} \cdot \frac{\partial z_2}{\partial A_1}$$
- $\frac{\partial z_2}{\partial (A_1)_{i}} = w_{2i}$
+
+$$\frac{\partial z_2}{\partial (A_1)_{i}} = w_{2i}$$
+ 
  $$\frac{\partial z_2}{\partial A_1}=W_2^T$$
+ 
  
  $$\frac{\partial L}{\partial A_1} =(\hat{y}-y) \cdot W_2^T$$
  Производные по $W_1$ и $b_1:$  
  $a_i = ReLU((z_1)_i) = max(0, (z_1)_i)$
+ 
   $$\frac{\partial a_i}{\partial (z_1)_i} = \begin{cases} 0, & (z_1)_i \le 0 \\ 1, & (z_1)_i > 0 \end {cases}$$
+  
   
   $$\frac{\partial L}{\partial (b_1)_i} = \frac{\partial L}{\partial (z_1)_i} \cdot \frac{\partial (z_1)_i}{\partial (b_1)_i}= \frac{\partial L}{\partial (z_1)_i} \cdot 1=\frac{\partial L}{\partial (A_1)_i} \cdot \frac{\partial a_i}{\partial (z_1)_i} = w_{2i} \cdot \frac{\partial a_i}{\partial (z_1)_i}$$
   $z_1 = W_1 X + b_1$
@@ -64,24 +91,22 @@ $$\frac{\partial L}{\partial A_1} = \frac{\partial L}{\partial z_2} \cdot \frac{
 
 #### Для батча из $n = 500$ элементов 
 
-$$
-\begin{aligned}
-\frac {\partial L}{\partial z_2} &= \hat{y} - y \in\mathbb{R}^{1 \times n}\\[4pt] 
-\frac{\partial L}{\partial W_2} &= \frac{1}{n} \cdot \frac {\partial L}{\partial z_2} \cdot A_1^T \in\mathbb{R}^{1 \times 8}\\[4pt]
-\frac{\partial L}{\partial b_2} &= \frac{1}{n} \cdot \frac {\partial L}{\partial z_2} \cdot \mathbf{1}_{n \times 1} \in\mathbb{R}^{1 \times 1}\\[4pt]
-\frac{\partial L}{\partial A_1} &= W_2^T \cdot \frac {\partial L}{\partial z_2}\in\mathbb{R}^{8 \times n}\\[4pt]
-\frac{\partial L}{\partial z_1} &= \frac{\partial L}{\partial A_1} \odot \mathbb{1}_{(z_1 > 0)} \in\mathbb{R}^{8 \times n}\\[4pt]
-\frac{\partial L}{\partial W_1} &= \frac{1}{n} \cdot \frac{\partial L}{\partial z_1} \cdot X \in\mathbb{R}^{8 \times 2}\\[4pt]
+$$\begin{aligned}
+\frac {\partial L}{\partial z_2} &= \hat{y} - y \in\mathbb{R}^{1 \times n},  
+\frac{\partial L}{\partial W_2} &= \frac{1}{n} \cdot \frac {\partial L}{\partial z_2} \cdot A_1^T \in\mathbb{R}^{1 \times 8},  
+\frac{\partial L}{\partial b_2} &= \frac{1}{n} \cdot \frac {\partial L}{\partial z_2} \cdot \mathbf{1}_{n \times 1} \in\mathbb{R}^{1 \times 1},
+\frac{\partial L}{\partial A_1} &= W_2^T \cdot \frac {\partial L}{\partial z_2}\in\mathbb{R}^{8 \times n},
+\frac{\partial L}{\partial z_1} &= \frac{\partial L}{\partial A_1} \odot \mathbb{1}_{(z_1 > 0)} \in\mathbb{R}^{8 \times n},
+\frac{\partial L}{\partial W_1} &= \frac{1}{n} \cdot \frac{\partial L}{\partial z_1} \cdot X \in\mathbb{R}^{8 \times 2},
 \frac{\partial L}{\partial b_1} &= \frac{1}{n} \cdot \frac{\partial L}{\partial z_1} \cdot \mathbf{1}_{n \times 1} \in\mathbb{R}^{8 \times 1}
-\end{aligned}
-$$
+\end{aligned}$$
 
 ## Численный метод (Метод конечных разностей)
 
 $$\frac{\partial L}{\partial c_i} \approx \frac{L(c_i + \varepsilon) - L(c_i - \varepsilon)}{2\varepsilon}, $$ шаг $\quad \varepsilon = 10^{-5}$  
 $c = W_1 |b_1|W_2 |b_2$  
-Для проверки будем использовать относительную разность, так как градиенты могут иметь разный масштаб, а она их нормирует.
-$$\text {rel_diff} = \max_i \frac{|grad_{\text{num}}^{(i)} - grad_{\text{an}}^{(i)}|}{|grad_{\text{num}}^{(i)}| + |grad_{\text{an}}^{(i)}| }$$
+Для проверки будем использовать относительную разность, так как градиенты могут иметь разный масштаб, а она их нормирует:
+$$\text{reldiff} = \max_i \frac{|grad_{\text{num}}^{(i)} - grad_{\text{an}}^{(i)}|}{|grad_{\text{num}}^{(i)}| + |grad_{\text{an}}^{(i)}| }$$
 
 ### Результаты градиентной проверки
 На случайных 50 входных данных погрешность не больше $10 ^{-4}$
@@ -95,27 +120,45 @@ $$\text {rel_diff} = \max_i \frac{|grad_{\text{num}}^{(i)} - grad_{\text{an}}^{(
 
 ## Устойчивость модели
 
-Для каждой правильно классифицированной точки $X$ с истинной меткой $y$ необходимо найти минимальное возмущение $\delta$, такое что:
+Для каждой правильно классифицированной точки $X$ с истинной меткой $y$ необходимо найти минимальное возмущение $\delta$, такое что: 
+
 $$\hat{y}(X+\delta) \neq y$$
+
 Для точки $X$ с истинной меткой $y$ определим функцию потерь
+
  $$L(X,y)=-(ylog(\hat{y}(X)) + (1-y)log(1-\hat{y}(X)))$$
+ 
  Нужно максимизировать $L(x, y)$ чтобы модель ошиблась. Для этого можно применить итеративный градиентный метод PGD:
+ 
  $$\delta_{t+1}=\delta_t+\alpha \cdot \nabla_X L(X+\delta_t,y)$$
+ 
  где: $\alpha-$шаг градиентного подъема, $t-$ номер итерации.  
  Идем вверх по градиенту функции потерь, поэтому для максимальной ошибки $\alpha > 0$.  
  Процесс останавливается при выполнении условия:
+ 
  $$\hat{y}(X+\delta_t) \neq y$$
+ 
 Полученное $\delta = \delta_t$ является искомым возмущением.  
 Градиент по X:
+
 $$\frac{\partial L}{\partial X} = \frac{\partial L}{\partial z_2} \cdot \frac{\partial z_2}{\partial A_1} \cdot \frac{\partial A_1}{\partial z_1} \cdot \frac{\partial z_1}{\partial X}$$
+
 $\frac{\partial z_1}{\partial X} =W_1^T$
+
 $$\nabla_X L(X, y) = W_1^T \left( \left( W_2^T (\hat{y} - y) \right) \odot \mathbb{1}_{(z_1 > 0)} \right)$$
+
 Для бинарной классификации с сигмоидой решение модели определяется знаком $z_2(X):$ 
+
 $$\hat{y}(X) = \sigma (z_2(X)) > 0.5\Leftrightarrow z_2>0$$
+
 Поэтому можно искать градиент $z_2$ по $X:$
+
 $$\nabla_X L = \frac{\partial L}{\partial z_2} \cdot \nabla_X z_2 = (\hat{y} - y) \cdot \nabla_X z_2$$
+
 $$\frac{\partial z_2}{\partial X} = \frac{\partial z_2}{\partial A_1} \cdot \frac{\partial A_1}{\partial z_1} \cdot \frac{\partial z_1}{\partial X}$$
+
 $$\frac{\partial z_2}{\partial X} = \left( W_2^T \odot \mathbb{1}_{(z_1 > 0)} \right)^T \cdot W_1^T$$
+
 В реализации попроще: если истинная метка равна 1, то двигаемся против градиента, иначе по нему.
 Для кусочно-линейной функции и старта из 0 — движение по градиенту ведет к ближайшей границе, поэтому полученное возмущение будет близко к минимальному по норме 2.
 ### Недостаток алгоритма 
